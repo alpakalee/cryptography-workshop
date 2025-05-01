@@ -78,6 +78,14 @@ def decrypt_with_mapping(ciphertext, mapping):
 def frequency_analysis_app():
     st.title("빈도 분석 기반 암호 해독")
     
+    # 세션 상태 초기화
+    if 'freq_data' not in st.session_state:
+        st.session_state.freq_data = None
+    if 'mapping' not in st.session_state:
+        st.session_state.mapping = None
+    if 'ciphertext' not in st.session_state:
+        st.session_state.ciphertext = ""
+    
     st.write("""
     ### 빈도 분석이란?
     빈도 분석은 암호문에서 각 문자의 출현 빈도를 분석하여 단일 치환 암호를 해독하는 기법입니다.
@@ -115,6 +123,7 @@ def frequency_analysis_app():
             freq_df = {"글자": list(english_freq), "빈도(%)": english_freq_percent}
             st.dataframe(freq_df, width=400)
         
+        # 입력된 암호문 저장
         ciphertext = st.text_area("암호문을 입력하세요:", 
                                 """
                                 QSX KHDGC LPFRE ZFY OTNVU FWXP QSX JMBA VFI.
@@ -124,20 +133,30 @@ def frequency_analysis_app():
                                 """, 
                                 height=150)
         
+        if ciphertext != st.session_state.ciphertext:
+            # 암호문이 변경되면 세션 상태 초기화
+            st.session_state.ciphertext = ciphertext
+            st.session_state.freq_data = None
+            st.session_state.mapping = None
+        
         if st.button("빈도 분석 실행"):
             # 빈도 분석 수행
-            freq_data = analyze_frequency(ciphertext)
-            
+            st.session_state.freq_data = analyze_frequency(ciphertext)
+            # 매핑 테이블 생성
+            st.session_state.mapping = create_mapping_table(st.session_state.freq_data)
+        
+        # 빈도 분석 결과가 있으면 표시
+        if st.session_state.freq_data is not None:
             # 결과 표시
             st.write("### 문자 빈도 분석 결과:")
             
-            total_chars = sum(count for _, count in freq_data)
+            total_chars = sum(count for _, count in st.session_state.freq_data)
             
             # 데이터프레임 형태로 표시
             result_data = {
-                "문자": [char for char, _ in freq_data],
-                "빈도수": [count for _, count in freq_data],
-                "백분율(%)": [round((count / total_chars) * 100, 2) for _, count in freq_data]
+                "문자": [char for char, _ in st.session_state.freq_data],
+                "빈도수": [count for _, count in st.session_state.freq_data],
+                "백분율(%)": [round((count / total_chars) * 100, 2) for _, count in st.session_state.freq_data]
             }
             
             result_df = pd.DataFrame(result_data)
@@ -153,18 +172,16 @@ def frequency_analysis_app():
             with col2:
                 st.dataframe(result_df)
             
-            # 매핑 테이블 생성
-            mapping = create_mapping_table(freq_data)
-            
+            # 매핑 테이블 표시
             st.write("### 추정된 매핑 테이블:")
             mapping_data = {
-                "암호문 글자": list(mapping.keys()),
-                "추정 평문 글자": list(mapping.values())
+                "암호문 글자": list(st.session_state.mapping.keys()),
+                "추정 평문 글자": list(st.session_state.mapping.values())
             }
             st.dataframe(mapping_data, width=400)
             
             # 복호화 시도
-            decrypted = decrypt_with_mapping(ciphertext, mapping)
+            decrypted = decrypt_with_mapping(ciphertext, st.session_state.mapping)
             
             st.write("### 빈도 분석 기반 복호화 결과:")
             st.info(decrypted)
@@ -175,10 +192,10 @@ def frequency_analysis_app():
             
             col1, col2, col3 = st.columns(3)
             
-            adjusted_mapping = dict(mapping)
+            adjusted_mapping = dict(st.session_state.mapping)
             
             # 사용자 정의 매핑 입력 필드
-            for i, (cipher_char, plain_char) in enumerate(mapping.items()):
+            for i, (cipher_char, plain_char) in enumerate(st.session_state.mapping.items()):
                 if i % 3 == 0:
                     with col1:
                         new_char = st.text_input(f"{cipher_char} →", plain_char, max_chars=1, key=f"char_{cipher_char}_1")
@@ -301,8 +318,9 @@ def frequency_analysis_app():
         아래 예제를 통해 여러분도 홈즈처럼 암호를 해독해 보세요!
         """)
         
-        st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/4/43/Dancing_Men_cipher.svg/400px-Dancing_Men_cipher.svg.png", 
-                caption="원작에 등장하는 춤추는 인형 암호")
+        # 이미지 URL 변경
+        st.image("https://upload.wikimedia.org/wikipedia/commons/4/43/Dancing_Men_cipher.svg", 
+                caption="원작에 등장하는 춤추는 인형 암호", width=400)
         
         st.write("""
         ### 우리의 암호 퍼즐
