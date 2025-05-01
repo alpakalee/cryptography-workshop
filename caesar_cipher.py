@@ -149,20 +149,6 @@ def get_image_download_link(img, filename, text):
     href = f'<a href="data:file/png;base64,{img_str}" download="{filename}">{text}</a>'
     return href
 
-def create_mapping_table(shift):
-    """
-    시프트 값에 따른 알파벳 매핑 테이블을 생성합니다.
-    """
-    alphabet = string.ascii_uppercase
-    shifted_alphabet = alphabet[shift:] + alphabet[:shift]
-    
-    mapping = {
-        '원본': list(alphabet),
-        '암호화': list(shifted_alphabet)
-    }
-    
-    return pd.DataFrame(mapping)
-
 def caesar_cipher_app():
     st.title("시저 암호 브루트 포스 공격")
     
@@ -214,10 +200,6 @@ def caesar_cipher_app():
         
         text = st.text_area("텍스트 입력:", "ATTACK AT DAWN" if mode == "암호화" else "DWWDFN DW GDZQ", height=100)
         shift = st.slider("시프트 값 (1-25):", 1, 25, 3)
-        
-        # 매핑 테이블 표시
-        st.write("### 알파벳 매핑 테이블:")
-        st.dataframe(create_mapping_table(shift))
         
         if st.button("실행", key="encrypt_decrypt_btn"):
             if mode == "암호화":
@@ -291,15 +273,15 @@ def caesar_cipher_app():
         
         st.write(f"현재 복호화 결과: **{decrypted}**")
         
-        # 정답 확인
+        # 정답 확인 - 틀렸을 때 원문이 나오지 않도록 수정
         if st.button("정답 확인", key="check_puzzle"):
             correct_shift = puzzle_data['shift']
-            correct_answer = caesar_decrypt(puzzle_data['cipher'], correct_shift)
             
             if puzzle_shift == correct_shift:
+                correct_answer = caesar_decrypt(puzzle_data['cipher'], correct_shift)
                 st.success(f"정답입니다! 시프트 값 {correct_shift}을(를) 찾았습니다. 원문: {correct_answer}")
             else:
-                st.error(f"틀렸습니다. 정답은 시프트 값 {correct_shift}입니다. 원문: {correct_answer}")
+                st.error(f"틀렸습니다. 다른 시프트 값을 시도해보세요.")
         
         # 알파벳 조합 실습
         st.write("### 알파벳 매핑 실습")
@@ -324,8 +306,29 @@ def caesar_cipher_app():
             correct_shift = puzzle_data['shift']
             correct_plain = caesar_decrypt(puzzle_data['cipher'], correct_shift)
             
-            st.write(f"정답: **{correct_plain[:5]}**")
-            st.write("실습을 완료했습니다! 이제 브루트 포스 탭으로 돌아가 더 어려운 암호문에 도전해보세요.")
+            # 정답이 바로 표시되지 않고, 사용자의 입력이 맞는지만 확인
+            user_correct = True
+            plain_chars = []
+            
+            for i, char in enumerate(puzzle_data['cipher'][:5]):
+                if char.isalpha():
+                    guess_key = f"guess_{i}"
+                    user_guess = st.session_state.get(guess_key, "").upper()
+                    correct_char = correct_plain[i].upper()
+                    plain_chars.append(correct_char if user_guess == correct_char else "?")
+                    
+                    if user_guess != correct_char:
+                        user_correct = False
+            
+            if user_correct:
+                st.success("모든 문자를 올바르게 맞추셨습니다!")
+                st.write(f"정답: **{correct_plain[:5]}**")
+            else:
+                st.error("일부 또는 모든 문자가 틀렸습니다. 다시 시도해보세요.")
+                # 사용자가 맞춘 문자만 보여주고 틀린 문자는 ?로 표시
+                st.write(f"현재 결과: **{''.join(plain_chars)}**")
+            
+            st.write("실습을 완료했으면 브루트 포스 탭으로 돌아가 더 어려운 암호문에 도전해보세요.")
 
 if __name__ == "__main__":
     caesar_cipher_app()
