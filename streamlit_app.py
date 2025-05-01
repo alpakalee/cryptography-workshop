@@ -35,8 +35,8 @@ def main():
         각 실습에는 이론 설명, 실습 도구, 그리고 코드 완성 문제가 포함되어 있습니다.
         """)
         
-        st.image("https://www.historycrunch.com/uploads/4/1/1/6/41169839/caesar-cipher-shift-wheel_orig.jpg", 
-                caption="시저 암호 시프트 휠 이미지")
+        st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/4/4a/Caesar_cipher_left_shift_of_3.svg/1200px-Caesar_cipher_left_shift_of_3.svg.png", 
+                caption="시저 암호 시프트 다이어그램")
         
         st.write("""
         ### 학습 목표:
