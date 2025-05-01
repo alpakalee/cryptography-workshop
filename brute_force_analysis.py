@@ -1,4 +1,4 @@
-# 2week/rot13_cipher.py
+# 2week/brute_force_analysis.py
 
 import streamlit as st
 import pandas as pd
@@ -56,7 +56,7 @@ def time_to_human_readable(seconds):
     else:
         return f"{seconds/31536000:.2e} 년"
 
-def rot13_app():
+def brute_force_analysis_app():
     st.title("키스페이스 크기와 브루트포스 시간 분석")
     
     st.write("""
@@ -129,10 +129,10 @@ def rot13_app():
     keyspaces = [calculate_keyspace(length, charset_size) for length in lengths]
     times = [calculate_time(keyspace, attempts_per_second) for keyspace in keyspaces]
     
-    # 데이터프레임 생성
+    # 데이터프레임 생성 - int64로 변환하여 PyArrow 오류 방지
     data = pd.DataFrame({
         "비밀번호 길이": lengths,
-        "키스페이스 크기": keyspaces,
+        "키스페이스 크기": [int(k) if k < 9223372036854775807 else float(k) for k in keyspaces],
         "소요 시간(초)": times,
         "소요 시간(사람 읽기용)": [time_to_human_readable(t) for t in times]
     })
@@ -194,8 +194,13 @@ def rot13_app():
     
     with col2:
         st.subheader("데이터 테이블")
-        # 각 길이별 키스페이스와 브루트포스 시간
-        st.dataframe(data)
+        # 각 길이별 키스페이스와 브루트포스 시간 - 표시할 데이터만 선택
+        display_data = pd.DataFrame({
+            "비밀번호 길이": data["비밀번호 길이"],
+            "키스페이스 크기": [f"{k:,.0f}" if isinstance(k, (int, float)) and k < 1e12 else f"{k:.2e}" for k in data["키스페이스 크기"]],
+            "소요 시간": data["소요 시간(사람 읽기용)"]
+        })
+        st.dataframe(display_data)
     
     # 키스페이스와 시간의 관계 설명
     st.write("""
@@ -268,4 +273,4 @@ def rot13_app():
             st.success("안전: 브루트포스 공격으로 해독하기 매우 어렵습니다.")
 
 if __name__ == "__main__":
-    rot13_app()
+    brute_force_analysis_app()
