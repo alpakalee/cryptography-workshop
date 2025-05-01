@@ -275,13 +275,22 @@ def caesar_cipher_app():
         
         # 정답 확인 - 틀렸을 때 원문이 나오지 않도록 수정
         if st.button("정답 확인", key="check_puzzle"):
-            correct_shift = puzzle_data['shift']
+            user_shift = puzzle_shift  # 현재 선택된 시프트 값 저장
+            answer_shift = puzzle_data['shift']  # 정답 시프트 값
             
-            if puzzle_shift == correct_shift:
-                correct_answer = caesar_decrypt(puzzle_data['cipher'], correct_shift)
-                st.success(f"정답입니다! 시프트 값 {correct_shift}을(를) 찾았습니다. 원문: {correct_answer}")
+            # 세션 상태를 사용하여 이전 상태 초기화
+            if 'correct_answer_shown' not in st.session_state:
+                st.session_state.correct_answer_shown = False
+                
+            if user_shift == answer_shift:
+                # 정답인 경우에만 correct_answer 계산
+                correct_answer = caesar_decrypt(puzzle_data['cipher'], answer_shift)
+                st.session_state.correct_answer_shown = True
+                st.success(f"정답입니다! 시프트 값 {answer_shift}을(를) 찾았습니다. 원문: {correct_answer}")
             else:
-                st.error(f"틀렸습니다. 다른 시프트 값을 시도해보세요.")
+                # 변수를 공유하지 않도록 분리
+                st.session_state.correct_answer_shown = False
+                st.error("틀렸습니다. 다른 시프트 값을 시도해보세요.")
         
         # 알파벳 조합 실습
         st.write("### 알파벳 매핑 실습")
@@ -303,12 +312,17 @@ def caesar_cipher_app():
                     st.text_input("", key=f"guess_{i}", max_chars=1)
         
         if st.button("조합 확인", key="check_combo"):
-            correct_shift = puzzle_data['shift']
-            correct_plain = caesar_decrypt(puzzle_data['cipher'], correct_shift)
-            
-            # 정답이 바로 표시되지 않고, 사용자의 입력이 맞는지만 확인
+            # 사용자의 입력을 검증
             user_correct = True
             plain_chars = []
+            
+            # 세션 상태를 사용하여 이전 상태 초기화
+            if 'combo_correct_plain' not in st.session_state:
+                st.session_state.combo_correct_plain = ""
+            
+            # 정답 계산 - 매번 새로 계산하지만 세션 상태에만 저장
+            correct_plain = caesar_decrypt(puzzle_data['cipher'], puzzle_data['shift'])
+            st.session_state.combo_correct_plain = correct_plain
             
             for i, char in enumerate(puzzle_data['cipher'][:5]):
                 if char.isalpha():
